@@ -8,12 +8,15 @@ dry_run=${DRY_RUN:-1}
 
 # Create a temporary working directory to avoid dirty files in after publish
 workdir=$(mktemp -d -t signify-publish-XXXXXXXXXXXXXXm)
-rsync -rv --exclude-from=".gitignore" . "$workdir"
+rsync -r --exclude-from=".gitignore" . "$workdir"
 cd "$workdir"
-echo "Publishing from $PWD"
+
+echo ""
+echo "Created temporary working directory $PWD"
 
 # Make sure there are no git status changes
 if [ -n "$(git status -u --porcelain)" ]; then
+    echo ""
     echo "The workspace is modified, are you sure? yes/no"
     read -r REPLY
     echo
@@ -42,9 +45,9 @@ if [ "$dist_tag" = "dev" ]; then
 else
     version=$(jq .version -r package.json)
 fi
+
 echo ""
 echo "Getting ready to publish version $package_name@$version"
-
 if [ -z "$dry_run" ] || [ "$dry_run" -eq "0" ]; then
     echo "Are you sure? yes/no"
     read -r REPLY
@@ -61,3 +64,7 @@ if [ -z "$dry_run" ] || [ "$dry_run" -eq "0" ]; then
 else
     npm publish --tag "$dist_tag" --dry-run
 fi
+
+echo ""
+echo "All done, cleaning up working directory $workdir"
+rm -rf "$workdir"
